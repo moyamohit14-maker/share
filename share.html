@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>🔥scan2share</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{background:#e5ddd5;}
+.chat-container{max-width:500px;margin:auto;height:100vh;display:flex;flex-direction:column;}
+.header{background:#075E54;color:#fff;padding:10px;}
+.chat-box{flex:1;overflow-y:auto;padding:10px;}
+.msg{max-width:70%;padding:8px;margin:5px;border-radius:10px;}
+.me{background:#dcf8c6;margin-left:auto;}
+.other{background:#fff;}
+.input-area{display:flex;padding:8px;background:#f0f0f0;}
+input{flex:1;border:none;padding:10px;border-radius:20px;}
+.send-btn{margin-left:5px;border:none;background:#25D366;color:#fff;padding:10px;border-radius:50%;}
+.file-box{background:#fff;padding:10px;border-radius:8px;margin-top:5px;}
+.login-box{max-width:300px;margin:80px auto;background:#fff;padding:20px;border-radius:10px;}
+.user-list {
+  max-height:200px;
+  overflow-y: auto;
+  background: #fff;
+  max-width:200px;
+  margin-top:10px;
+  margin-left:10px;
+  border-bottom: 1px solid #ddd;
+}
+.user-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.user-item:hover {
+  background: #f5f5f5;
+}
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #25D366;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 10px;
+}
+.user-info { flex: 1; }
+.user-name { font-weight: bold; }
+.user-status { font-size: 11px; color: gray; }
+.online { color: green; font-weight: bold; }
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage" class="login-box text-center shadow">
+<h4>🔐 Login</h4>
+<input type="text" id="username" class="form-control my-2" placeholder="Enter Name">
+<input type="text" id="roomInput" class="form-control my-2" placeholder="Room Name">
+<button class="btn btn-success w-100" onclick="login()">Start Chat</button>
+</div>
+
+<!-- CHAT -->
+<div id="chatPage" style="display:none;">
+<div class="chat-container shadow">
+
+<!-- HEADER WITH BUTTONS -->
+<div class="header d-flex justify-content-between align-items-center">
+  <div>
+    <b>🔥 Chat Room</b><br>
+    <small id="roomName"></small>
+  </div>
+<div class="dropdown">
+  <button class="btn btn-light btn-sm" data-bs-toggle="dropdown">
+    ⋮
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li>
+      <a class="dropdown-item" href="#" onclick="toggleUsers()">👥 Users</a>
+    </li>
+    <li>
+      <a class="dropdown-item" href="#" onclick="toggleQR()">🆔 My ID</a>
+    </li>
+    <li>
+      <a class="dropdown-item text-danger" href="#" onclick="logout()">🚪 Logout</a>
+    </li>
+  </ul>
+</div>
+</div>
+
+<!-- USERS -->
+<div id="userListContainer" class="user-list" style="display:none;"></div>
+
+<!-- QR -->
+<div id="qrContainer" class="text-right p-2" style="display:none;">
+  <canvas id="qr"></canvas><br>
+  <small>ID: <b id="myid"></b></small>
+</div>
+
+<!-- Typing -->
+<div id="typing" style="padding:5px;font-size:12px;color:gray"></div>
+
+<div id="chatBox" class="chat-box"></div>
+
+<div class="input-area">
+<input type="text" id="msg" placeholder="Message or File ID">
+<button class="send-btn" onclick="sendMsg()">➤</button>
+</div>
+
+<div class="p-2">
+<input type="file" id="file" class="form-control" accept=".png,.jpg,.jpeg,.pdf">
+<button class="btn btn-success w-100 mt-2" onclick="uploadFile()">Upload File</button>
+</div>
+
+</div>
+</div>
+
+<audio id="msgSound" src="https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3"></audio>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAKV9AAt0p2VTtvn_Vbquwo04AI2ATJpnY",
+  authDomain: "scan2share-f8336.firebaseapp.com",
+  databaseURL: "https://scan2share-f8336-default-rtdb.firebaseio.com",
+  projectId: "scan2share-f8336",
+  storageBucket: "scan2share-f8336.firebasestorage.app",
+  messagingSenderId: "1085226163961",
+  appId: "1:1085226163961:web:ab5172a601808baede0c28",
+  measurementId: "G-YKKF1RFY17"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+
+let userID, currentRoom;
+let chatBox = document.getElementById("chatBox");
+
+// LOGIN
+function login(){
+  let name=username.value.trim();
+  let room=roomInput.value.trim();
+  if(!name||!room) return alert("Enter Name & Room");
+  userID=name; currentRoom=room;
+  localStorage.setItem("userID",userID);
+  localStorage.setItem("room",currentRoom);
+  startChat();
+}
+
+// AUTO LOGIN
+window.onload=()=>{
+  let u=localStorage.getItem("userID");
+  let r=localStorage.getItem("room");
+  if(u&&r){userID=u;currentRoom=r;startChat();}
+}
+
+// START CHAT
+function startChat(){
+  loginPage.style.display="none";
+  chatPage.style.display="block";
+  roomName.innerText="Room: "+currentRoom;
+  myid.innerText=userID;
+  QRCode.toCanvas(qr,userID);
+
+  // ONLINE SYSTEM
+  let userRef=db.ref("users/"+userID);
+  userRef.set({online:true,lastSeen:Date.now()});
+  db.ref(".info/connected").on("value",snap=>{
+    if(snap.val()===true){
+      userRef.onDisconnect().set({online:false,lastSeen:Date.now()});
+    }
+  });
+
+  // USERS
+  db.ref("users").on("value", snap => {
+    let html = "";
+    snap.forEach(u => {
+      let d = u.val();
+      let name = u.key;
+      let status = d.online ?
+        "<span class='online'>Online</span>" :
+        "Last seen: " + new Date(d.lastSeen || 0).toLocaleTimeString();
+      let firstLetter = name.charAt(0).toUpperCase();
+      html += `
+<div class="user-item" onclick="openPrivateChat('${name}')">
+  <div class="user-avatar">${firstLetter}</div>
+  <div class="user-info">
+    <div class="user-name">${name}</div>
+    <div class="user-status">${status}</div>
+  </div>
+</div>`;
+    });
+    userListContainer.innerHTML = html;
+  });
+
+  // TYPING SHOW
+  db.ref("typing/"+currentRoom).on("value",snap=>{
+    let t="";
+    snap.forEach(u=>{ if(u.key!=userID){t=u.key+" is typing..."}});
+    typing.innerText=t;
+  });
+
+  loadRoom();
+}
+
+// TYPING SEND
+msg.addEventListener("input",()=>{
+  db.ref("typing/"+currentRoom+"/"+userID).set(true);
+  setTimeout(()=>db.ref("typing/"+currentRoom+"/"+userID).remove(),1000);
+});
+
+// SEND
+function sendMsg(){
+  let text=msg.value.trim();
+  if(!text) return;
+  let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+  // FILE ID
+  if(/^[0-9]{4,6}$/.test(text)){
+    showFile(text,userID,time);
+    msg.value="";return;
+  }
+
+  db.ref("rooms/"+currentRoom).push({
+    user:userID,msg:text,time:time,seen:false
+  });
+  msg.value="";
+}
+
+// LOAD
+function loadRoom(){
+  chatBox.innerHTML="";
+  db.ref("rooms/"+currentRoom).off();
+
+  db.ref("rooms/"+currentRoom).on("child_added",data=>{
+    let d=data.val();
+    let key=data.key;
+
+    if(d.user!=userID){
+      msgSound.play();
+      db.ref("rooms/"+currentRoom+"/"+key).update({seen:true});
+    }
+
+    if(d.msg.startsWith("FILE:")){
+      let id=d.msg.split(":")[1];
+      showFile(id,d.user,d.time);
+      return;
+    }
+
+    let tick="";
+    if(d.user==userID){
+      tick=d.seen?"✔✔":"✔";
+    }
+
+    chatBox.innerHTML+=`
+<div class="msg ${d.user==userID?"me":"other"}">
+<b>${d.user}</b><br>${d.msg}
+<br><small style="font-size:10px;color:gray">${d.time} ${tick}</small>
+</div>`;
+
+    scrollDown();
+  });
+}
+
+// FILE UPLOAD
+function uploadFile(){
+  let file=document.getElementById("file").files[0];
+  if(!file) return alert("Select file");
+  let allowed=["image/png","image/jpeg","application/pdf"];
+  if(!allowed.includes(file.type)) return alert("Only PNG JPG PDF");
+
+  let reader=new FileReader();
+  reader.onload=e=>{
+    let id=Math.floor(1000+Math.random()*9000);
+    let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+    db.ref("files/"+id).set({
+      name:file.name,url:e.target.result,type:file.type
+    });
+
+    db.ref("rooms/"+currentRoom).push({
+      user:userID,msg:"FILE:"+id,time:time
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+// SHOW FILE
+function showFile(id,sender,time){
+  db.ref("files/"+id).once("value",snap=>{
+    let file=snap.val();
+    if(!file) return alert("File not found");
+
+    let preview="";
+    if(file.type.includes("image")){
+      preview=`<img src="${file.url}" style="width:100%">`;
+    }else{
+      preview=`<iframe src="${file.url}" width="100%" height="200"></iframe>`;
+    }
+
+    chatBox.innerHTML+=`
+<div class="msg ${sender==userID?"me":"other"}">
+📁 File (${id})
+<div class="file-box">${preview}
+<br><a href="${file.url}" download class="btn btn-success btn-sm">Download</a>
+</div>
+<br><small>${time}</small>
+</div>`;
+
+    scrollDown();
+  });
+}
+
+// SCROLL
+function scrollDown(){
+  chatBox.scrollTop=chatBox.scrollHeight;
+}
+
+// LOGOUT
+function logout(){
+  db.ref("users/"+userID).set({online:false,lastSeen:Date.now()});
+  localStorage.clear();
+  location.reload();
+}
+
+// TOGGLE USERS AND QR
+function toggleUsers(){
+  let ul = document.getElementById("userListContainer");
+  let qr = document.getElementById("qrContainer");
+  if(ul.style.display === "none") { ul.style.display="block"; qr.style.display="none"; }
+  else ul.style.display="none";
+}
+
+function toggleQR(){
+  let qr = document.getElementById("qrContainer");
+  let ul = document.getElementById("userListContainer");
+  if(qr.style.display === "none") { qr.style.display="block"; ul.style.display="none"; }
+  else qr.style.display="none";
+}
+
+// OPTIONAL: OPEN PRIVATE CHAT (placeholder)
+function openPrivateChat(name){
+  alert("Private chat with "+name+" coming soon!");
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
