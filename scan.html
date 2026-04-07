@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Scan QR</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+body {
+    margin: 0;
+    background: #000;
+    color: white;
+    text-align: center;
+    font-family: sans-serif;
+}
+
+.header {
+    background: #075E54;
+    padding: 12px;
+}
+
+#reader {
+    width: 320px;
+    margin: 20px auto;
+}
+
+.footer {
+    margin-top: 10px;
+    opacity: 0.7;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">📷 QR Scan करें</div>
+
+<div id="reader"></div>
+
+<div class="footer" id="status">कैमरा शुरू हो रहा है...</div>
+
+<script>
+let scanned = false;
+
+// beep
+const beep = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
+
+function onScanSuccess(decodedText) {
+    if (scanned) return;
+    scanned = true;
+
+    beep.play().catch(()=>{});
+    if (navigator.vibrate) navigator.vibrate(200);
+
+    document.getElementById("status").innerText = "जुड़ रहे हैं...";
+
+    setTimeout(() => {
+        window.location.href = "share.html?room=" + encodeURIComponent(decodedText);
+    }, 500);
+}
+
+function onScanError(err) {
+    // ignore
+}
+
+function startScanner() {
+    const html5Qr = new Html5Qrcode("reader");
+
+    // 👉 IMPORTANT: back camera use करो
+    html5Qr.start(
+        { facingMode: "environment" },
+        {
+            fps: 15,
+            qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        onScanError
+    ).then(() => {
+        document.getElementById("status").innerText = "QR को बॉक्स में रखें";
+    }).catch(err => {
+        document.getElementById("status").innerText = "कैमरा error ❌";
+        console.error(err);
+    });
+}
+
+// start after page load
+window.onload = startScanner;
+</script>
+
+</body>
+</html>
