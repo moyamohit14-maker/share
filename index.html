@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Scan2Share</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{
+background: linear-gradient(135deg,#075E54,#25D366);
+color:#fff;
+font-family:sans-serif;
+}
+
+/* navbar */
+.navbar{
+background: transparent;
+}
+
+/* hero */
+.hero{
+height:60vh;
+display:flex;
+align-items:center;
+justify-content:center;
+text-align:center;
+animation: fadeIn 1.2s ease-in-out;
+}
+
+@keyframes fadeIn{
+from{opacity:0; transform:translateY(20px);}
+to{opacity:1; transform:translateY(0);}
+}
+
+/* logo */
+.logo{
+width:90px;
+height:90px;
+border-radius:50%;
+box-shadow:0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* buttons */
+.btn-main{
+background:#fff;
+color:#075E54;
+font-weight:bold;
+border-radius:30px;
+padding:12px;
+}
+.btn-main:hover{
+background:#f1f1f1;
+}
+
+/* cards */
+.card-box{
+background:#fff;
+color:#000;
+border-radius:15px;
+padding:20px;
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
+transition:0.3s;
+}
+.card-box:hover{
+transform:translateY(-5px);
+}
+</style>
+</head>
+
+<body>
+
+<!-- 🔝 Navbar -->
+<nav class="navbar navbar-expand-lg">
+<div class="container">
+<a class="navbar-brand text-white fw-bold" href="#">
+🔥 Scan2Share
+</a>
+</div>
+</nav>
+
+<!-- 🚀 Hero Section -->
+<div class="container hero">
+<div>
+
+<img src="images/logo.png" class="logo mb-3" onerror="this.style.display='none'">
+
+<h1 class="fw-bold">बिना फोन नंबर के फाइल शेयर करें</h1>
+
+<p class="lead">
+कोई लॉगिन नहीं • कोई नंबर नहीं • बस QR स्कैन करें और शेयर करें
+</p>
+
+<!-- Buttons -->
+<div class="mt-4">
+
+<a href="share.html" class="btn btn-main w-100 mb-2">
+📤 फाइल अपलोड करें
+</a>
+
+<a href="scan.html" class="btn btn-outline-light w-100">
+📷 QRscan
+</a>
+
+</div>
+
+<p class="small mt-3">🔒 आपकी फाइल सुरक्षित है और auto delete हो जाती है</p>
+
+</div>
+</div>
+
+<!-- 📦 Features -->
+<div class="container mb-5">
+
+<div class="row text-center">
+
+<div class="col-md-4 mb-3">
+<div class="card-box">
+<h5>📷 QR Join</h5>
+<p>QR को स्कैन करके तुरंत जुड़ें और फाइल शेयर करें</p>
+</div>
+</div>
+
+<div class="col-md-4 mb-3">
+<div class="card-box">
+<h5>👥 Multi Users</h5>
+<p>एक साथ कई लोग फाइल भेज और प्राप्त कर सकते हैं</p>
+</div>
+</div>
+
+<div class="col-md-4 mb-3">
+<div class="card-box">
+<h5>📁 Fast Sharing</h5>
+<p>ID या QR से तेज़ और आसान फाइल शेयरिंग</p>
+</div>
+</div>
+
+</div>
+
+</div>
+
+<!-- Footer -->
+<footer class="text-center pb-3">
+<small>© 2026 Scan2Share.shop</small>
+</footer>
+
+</body>
+</html>
