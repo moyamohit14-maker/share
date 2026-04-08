@@ -169,8 +169,8 @@ window.onload=()=>{
 function startChat(){
   loginPage.style.display="none";
   chatPage.style.display="block";
-  roomName.innerText="Room: "+currentRoom;
-  myid.innerText=userID;
+  roomName.innerText="Name: "+userID;
+  myid.innerText=currentRoom;
   QRCode.toCanvas(qr,userID);
 
   // ONLINE SYSTEM
