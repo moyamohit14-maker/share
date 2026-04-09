@@ -90,9 +90,13 @@ input{flex:1;border:none;padding:10px;border-radius:20px;}
     <li>
       <a class="dropdown-item" href="#" onclick="toggleQR()">🆔 My ID</a>
     </li>
+     <li>
+   <a class="dropdown-item text-danger" href="#" onclick="deleteMyData()">🗑 Delete My Data</a>
+ </li>
     <li>
       <a class="dropdown-item text-danger" href="#" onclick="logout()">🚪 Logout</a>
     </li>
+   
   </ul>
 </div>
 </div>
@@ -172,13 +176,14 @@ function startChat(){
   roomName.innerText="Name: "+userID;
   myid.innerText=currentRoom;
   QRCode.toCanvas(qr,userID);
-
+     
   // ONLINE SYSTEM
   let userRef=db.ref("users/"+userID);
   userRef.set({online:true,lastSeen:Date.now()});
   db.ref(".info/connected").on("value",snap=>{
     if(snap.val()===true){
       userRef.onDisconnect().set({online:false,lastSeen:Date.now()});
+      
     }
   });
 
@@ -212,6 +217,7 @@ function startChat(){
   });
 
   loadRoom();
+  startAutoDelete();
 }
 
 // TYPING SEND
@@ -285,13 +291,22 @@ function uploadFile(){
     let id=Math.floor(1000+Math.random()*9000);
     let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 
-    db.ref("files/"+id).set({
-      name:file.name,url:e.target.result,type:file.type
-    });
+    let expireTime = Date.now() + (5 * 60 * 1000); // ⏱️ 5 मिनट बाद delete
 
-    db.ref("rooms/"+currentRoom).push({
-      user:userID,msg:"FILE:"+id,time:time
-    });
+db.ref("files/" + id).set({
+  name: file.name,
+  url: e.target.result,
+  type: file.type,
+  user: userID,
+  expire: expireTime // ✅ नया field
+});
+
+    db.ref("rooms/" + currentRoom).push({
+  user: userID,
+  msg: "FILE:" + id,
+  time: time,
+  expire: expireTime // ✅ add
+});
   };
   reader.readAsDataURL(file);
 }
@@ -326,7 +341,59 @@ function showFile(id,sender,time){
 function scrollDown(){
   chatBox.scrollTop=chatBox.scrollHeight;
 }
-
+function startAutoDelete() {
+  setInterval(() => {
+    
+    // FILE DELETE
+    db.ref("files").once("value", snap => {
+      snap.forEach(file => {
+        let f = file.val();
+        if (f.expire && Date.now() > f.expire) {
+          file.ref.remove();
+        }
+      });
+    });
+    
+    // MESSAGE DELETE
+    db.ref("rooms/" + currentRoom).once("value", snap => {
+      snap.forEach(msg => {
+        let m = msg.val();
+        if (m.expire && Date.now() > m.expire) {
+          msg.ref.remove();
+        }
+      });
+    });
+    
+  }, 5000); // हर 5 सेकंड चेक
+}
+//delete my data
+function deleteMyData() {
+  if (!confirm("⚠️ क्या आप अपने सारे messages और files delete करना चाहते हैं?")) return;
+  
+  // 1. Messages delete (सिर्फ अपने)
+  db.ref("rooms/" + currentRoom).once("value", snap => {
+    snap.forEach(msg => {
+      if (msg.val().user === userID) {
+        msg.ref.remove();
+      }
+    });
+  });
+  
+  // 2. Files delete (सिर्फ अपनी)
+  db.ref("files").once("value", snap => {
+    snap.forEach(file => {
+      let f = file.val();
+      if (f.user === userID) {
+        file.ref.remove();
+      }
+    });
+  });
+  
+  alert("✅ आपके messages और files delete हो गए");
+  
+  // Optional: chat box साफ दिखाने के लिए
+  chatBox.innerHTML = "";
+}
 // LOGOUT
 function logout(){
   db.ref("users/"+userID).set({online:false,lastSeen:Date.now()});
